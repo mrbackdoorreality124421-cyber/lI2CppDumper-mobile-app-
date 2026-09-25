@@ -20,7 +20,7 @@ jobs:
         id: setup-ndk
         uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r25c
+          ndk-version: r27c
           add-to-path: false
 
       - name: Build Il2CppDumper engine for Android ARM64
