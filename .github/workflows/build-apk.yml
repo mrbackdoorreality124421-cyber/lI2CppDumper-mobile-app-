@@ -1,14 +1,12 @@
-name: Build Il2CppDumper APK
-
+name: Build APK
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +16,31 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        
-      - name: Build APK with Gradle
-        run: gradle assembleDebug
-        
-      - name: Upload APK to Artifacts
+      - name: Setup Android NDK
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          add-to-path: false
+
+      - name: Build Il2CppDumper engine for Android ARM64
+        run: |
+          git clone --depth 1 https://github.com/rodroidmods/Il2cppdumper-cpp.git temp_dumper
+          mkdir -p app/src/main/assets
+          cd temp_dumper && mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=${{ steps.setup-ndk.outputs.ndk-path }}/build/cmake/android.toolchain.cmake -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-24 -DANDROID_STL=c++_static -DCMAKE_BUILD_TYPE=Release
+          make -j4
+          cp il2cppdumper ../../../app/src/main/assets/
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: Il2CppDumper-APK
